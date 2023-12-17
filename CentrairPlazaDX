@@ -9,8 +9,8 @@ Sub CentrairPlazaDX1()
     Dim i As Integer
 
     ' ワークブックを開く
-    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V2.0.xlsm")
-    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
+    Set wb1 = Workbooks.Open("C:\Users\Myopon\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V2.0.xlsm")
+    Set wb2 = Workbooks.Open("C:\Users\Myopon\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
 
     ' ワークシートの参照を設定
     Set sw_1 = wb1.Sheets("食品全体（原紙）")
@@ -44,7 +44,7 @@ Sub CentrairPlazaDX1()
         brandName = sw_1.Range("A" & nrow_1).Value
         isBrandAllowed = False
 
-        ' 判断品牌是否被允许
+        ' 発注可能取引先の判断
         For i = LBound(allowedBrands) To UBound(allowedBrands)
             If brandName = allowedBrands(i) Then
                 isBrandAllowed = True
@@ -52,7 +52,7 @@ Sub CentrairPlazaDX1()
             End If
         Next i
 
-        ' 根据是否允许隐藏或显示行
+        ' 許可されていない取引先は非表示にする
         sw_1.Rows(nrow_1).Hidden = Not isBrandAllowed
     Next nrow_1
 
