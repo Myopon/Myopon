@@ -1,0 +1,164 @@
+Sub CentrairPlazaDX1()
+    Dim nrow As Long, lastCol As Long, nrow_1 As Long
+    Dim wb1 As Workbook, wb2 As Workbook
+    Dim sw_1 As Worksheet, sw_2 As Worksheet
+    Dim orderDay As Integer
+    Dim allowedBrands() As Variant
+    Dim brandName As String
+    Dim isBrandAllowed As Boolean
+    Dim i As Integer
+
+    ' ワークブックを開く
+    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V2.0.xlsm")
+    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
+
+    ' ワークシートの参照を設定
+    Set sw_1 = wb1.Sheets("食品全体（原紙）")
+    Set sw_2 = wb2.Sheets("納品確認リスト")
+
+    ' T2セルから注文日を取得し、曜日を判断
+    orderDay = Weekday(sw_1.Range("T2").Value)
+
+    ' 曜日に基づいて許可される銘柄を設定
+    Select Case orderDay
+        Case vbMonday
+            allowedBrands = Array("AOY", "BAN", "HKD")
+        Case vbTuesday
+            allowedBrands = Array("ROY", "JAT", "KYO")
+        Case vbWednesday
+            allowedBrands = Array("NCH", "ME", "VN")
+        Case vbThursday
+            allowedBrands = Array("IY", "BAN", "ICC")
+        Case vbFriday
+            allowedBrands = Array("YM", "KTB", "HKD")
+        Case vbSaturday
+            allowedBrands = Array("LET", "MZ", "PSC")
+        Case vbSunday
+            allowedBrands = Array("IY", "ME", "JAT")
+        Case Else
+            allowedBrands = Array()
+    End Select
+
+    ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
+    For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
+        brandName = sw_1.Range("A" & nrow_1).Value
+        isBrandAllowed = False
+
+        ' 判断品牌是否被允许
+        For i = LBound(allowedBrands) To UBound(allowedBrands)
+            If brandName = allowedBrands(i) Then
+                isBrandAllowed = True
+                Exit For
+            End If
+        Next i
+
+        ' 根据是否允许隐藏或显示行
+        sw_1.Rows(nrow_1).Hidden = Not isBrandAllowed
+    Next nrow_1
+
+    ' "納品確認リスト"のシートの各行に対して処理を行うループ
+    For nrow = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
+        ' 各行の最後の列を動的に決定
+        lastCol = sw_2.Cells(nrow, Columns.Count).End(xlToLeft).Column
+
+        ' 第5列から最後の列までの、0より大きい値の合計を計算
+        sw_2.Cells(nrow, 4).Value = Application.WorksheetFunction.SumIf(sw_2.Range(sw_2.Cells(nrow, 5), sw_2.Cells(nrow, lastCol)), ">0")
+    Next nrow
+
+    ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
+    For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
+        ' VLookup関数を使用して、必要なデータを検索し、"I"列に配置
+        sw_1.Range("I" & nrow_1).Value = Application.WorksheetFunction.VLookup(sw_1.Range("B" & nrow_1), sw_2.Range("B:D"), 3, False)
+    Next nrow_1
+
+    ' "食品全体（原紙）" のI列に戻す
+    sw_1.Activate
+    sw_1.Range("I1").Select
+
+    ' 処理完了のメッセージを表示
+    MsgBox "Hey guys！未納品分を集計できましたよ！"
+
+    ' ワークブックを開いたままにする
+    ' wb2.Close SaveChanges:=True  '
+End Sub
+
+Sub CentrairPlazaDX2()
+    Dim nrow As Long, wb1 As Workbook, wb2 As Workbook
+    Dim sw_1 As Worksheet, sw_2 As Worksheet
+    Dim brandName As String, productCode As String, deliveryDays As Integer
+    Dim orderDate As Date, deliveryDate As Date
+    Dim orderQuantity As Integer, colIndex As Integer
+
+    ' ワークブックを開く
+    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V2.0.xlsm")
+    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
+
+    ' ワークシートの参照を設定
+    Set sw_1 = wb1.Sheets("食品全体（原紙）")
+    Set sw_2 = wb2.Sheets("納品確認リスト")
+    orderDate = sw_1.Range("T2").Value
+
+    ' "食品全体（原紙）"の各行に対して処理を行うループ
+    For nrow = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
+        brandName = sw_1.Range("A" & nrow).Value
+        productCode = sw_1.Range("B" & nrow).Value
+        orderQuantity = sw_1.Range("S" & nrow).Value
+
+        ' 銘柄が隠されている場合、かつ値0の場合空白を設定
+        If sw_1.Rows(nrow).Hidden Then
+            orderQuantity = 0
+        End If
+
+        ' 銘柄に基づいて納品日数を設定
+        Select Case brandName
+            Case "AOY", "BAN"
+                deliveryDays = 1 ' 翌日納品
+            Case "HKD", "VN"
+                deliveryDays = 2 '
+            Case "ME", "IY"
+                deliveryDays = 3 '
+            Case "ROY", "JAT"
+                deliveryDays = 4 '
+            Case "YM", "KTB"
+                deliveryDays = 5 '
+            Case Else
+                deliveryDays = 2 '
+        End Select
+
+        deliveryDate = orderDate + deliveryDays
+
+        ' "納品確認リスト"で対応する商品コードを探す
+        Dim matchRow As Integer
+        matchRow = 0
+        For i = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
+            If sw_2.Cells(i, "B").Value = productCode Then
+                matchRow = i
+                Exit For
+            End If
+        Next i
+
+        ' 対応する納品日の列を探す
+        colIndex = 0
+        For i = 2 To sw_2.Cells(1, Columns.Count).End(xlToLeft).Column
+            If sw_2.Cells(1, i).Value = deliveryDate Then
+                colIndex = i
+                Exit For
+            End If
+        Next i
+
+        ' 対応する行と列に発注数を反映、または空白を設定
+        If matchRow > 0 And colIndex > 0 Then
+            sw_2.Cells(matchRow, colIndex).Value = IIf(orderQuantity = 0, "", orderQuantity)
+        End If
+    Next nrow
+
+    ' 処理完了のメッセージを表示
+    MsgBox "Congratulations！納品リストに反映できたよ～"
+
+    ' "納品確認リスト" のA列に戻す
+    sw_2.Activate
+    sw_2.Range("A3").Select
+
+    ' ワークブックを開いたままにする
+    ' wb2.Close SaveChanges:=True  '
+End Sub
