@@ -90,8 +90,8 @@ Sub CentrairPlazaDX2()
     Dim orderQuantity As Integer, colIndex As Integer
 
     ' ワークブックを開く
-    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V2.0.xlsm")
-    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
+    Set wb1 = Workbooks.Open("C:\Users\Myopon\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V2.0.xlsm")
+    Set wb2 = Workbooks.Open("C:\Users\Myopon\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
 
     ' ワークシートの参照を設定
     Set sw_1 = wb1.Sheets("食品全体（原紙）")
@@ -104,7 +104,7 @@ Sub CentrairPlazaDX2()
         productCode = sw_1.Range("B" & nrow).Value
         orderQuantity = sw_1.Range("S" & nrow).Value
 
-        ' 銘柄が隠されている場合、かつ値0の場合空白を設定
+        ' 銘柄が隠されている場合、かつ値0の場合は空白を設定
         If sw_1.Rows(nrow).Hidden Then
             orderQuantity = 0
         End If
@@ -114,20 +114,20 @@ Sub CentrairPlazaDX2()
             Case "AOY", "BAN"
                 deliveryDays = 1 ' 翌日納品
             Case "HKD", "VN"
-                deliveryDays = 2 '
+                deliveryDays = 2 '+2日納品
             Case "ME", "IY"
-                deliveryDays = 3 '
+                deliveryDays = 3 '+3日納品
             Case "ROY", "JAT"
-                deliveryDays = 4 '
+                deliveryDays = 4 '+4日納品
             Case "YM", "KTB"
-                deliveryDays = 5 '
+                deliveryDays = 5 '+5日納品
             Case Else
                 deliveryDays = 2 '
         End Select
 
         deliveryDate = orderDate + deliveryDays
 
-        ' "納品確認リスト"で対応する商品コードを探す
+        ' "納品確認リスト"で商品コードを探しマッチする
         Dim matchRow As Integer
         matchRow = 0
         For i = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
@@ -137,7 +137,7 @@ Sub CentrairPlazaDX2()
             End If
         Next i
 
-        ' 対応する納品日の列を探す
+        ' 納品日の列を探す
         colIndex = 0
         For i = 2 To sw_2.Cells(1, Columns.Count).End(xlToLeft).Column
             If sw_2.Cells(1, i).Value = deliveryDate Then
