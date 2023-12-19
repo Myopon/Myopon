@@ -39,10 +39,17 @@ Sub CentrairPlazaDX1()
             allowedBrands = Array()
     End Select
 
-    ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
+     ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
     For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
-        brandName = sw_1.Range("A" & nrow_1).Value
-        isBrandAllowed = False
+        ' VLookup関数を使用して、必要なデータを検索し、"I"列に配置
+        Dim lookupValue As Variant
+        lookupValue = sw_1.Range("B" & nrow_1).Value
+        If Not IsError(Application.Match(lookupValue, sw_2.Range("B:B"), 0)) Then
+            sw_1.Range("I" & nrow_1).Value = Application.WorksheetFunction.VLookup(lookupValue, sw_2.Range("B:D"), 3, False)
+        Else
+            sw_1.Range("I" & nrow_1).Value = "" ' 該当するデータがない場合は空白を設定
+        End If
+    Next nrow_1
 
         ' 発注可能取引先の判断
         For i = LBound(allowedBrands) To UBound(allowedBrands)
