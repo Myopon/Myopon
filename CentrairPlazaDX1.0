@@ -9,8 +9,8 @@ Sub CentrairPlazaDX1()
     Dim i As Integer
 
     ' ワークブックを開く
-    Set wb1 = Workbooks.Open("C:\Users\Myopon\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V2.0.xlsm")
-    Set wb2 = Workbooks.Open("C:\Users\Myopon\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
+    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V2.0.xlsm")
+    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
 
     ' ワークシートの参照を設定
     Set sw_1 = wb1.Sheets("食品全体（原紙）")
@@ -22,7 +22,7 @@ Sub CentrairPlazaDX1()
     ' 曜日に基づいて許可される銘柄を設定
     Select Case orderDay
         Case vbMonday
-            allowedBrands = Array("AOY", "BAN", "HKD")
+            allowedBrands = Array("JAT", "KYO", "ROY", "MFD", "IY", "KSD", "HOR", "MSJ", "VN", "KTB", "HKD", "KNT", "LET", "ME")
         Case vbTuesday
             allowedBrands = Array("ROY", "JAT", "KYO")
         Case vbWednesday
@@ -39,9 +39,31 @@ Sub CentrairPlazaDX1()
             allowedBrands = Array()
     End Select
 
-     ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
+    ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
     For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
-        ' VLookup関数を使用して、必要なデータを検索し、"I"列に配置
+        brandName = sw_1.Range("A" & nrow_1).Value
+        isBrandAllowed = False
+
+        ' 発注日判断
+        For i = LBound(allowedBrands) To UBound(allowedBrands)
+            If brandName = allowedBrands(i) Then
+                isBrandAllowed = True
+                Exit For
+            End If
+        Next i
+
+        ' 非表示
+        sw_1.Rows(nrow_1).Hidden = Not isBrandAllowed
+    Next nrow_1
+
+    ' "納品確認リスト"のシートの各行に対して処理を行うループ
+    For nrow = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
+        lastCol = sw_2.Cells(nrow, Columns.Count).End(xlToLeft).Column
+        sw_2.Cells(nrow, 4).Value = Application.WorksheetFunction.SumIf(sw_2.Range(sw_2.Cells(nrow, 5), sw_2.Cells(nrow, lastCol)), ">0")
+    Next nrow
+
+    ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
+    For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
         Dim lookupValue As Variant
         lookupValue = sw_1.Range("B" & nrow_1).Value
         If Not IsError(Application.Match(lookupValue, sw_2.Range("B:B"), 0)) Then
@@ -51,43 +73,11 @@ Sub CentrairPlazaDX1()
         End If
     Next nrow_1
 
-        ' 発注可能取引先の判断
-        For i = LBound(allowedBrands) To UBound(allowedBrands)
-            If brandName = allowedBrands(i) Then
-                isBrandAllowed = True
-                Exit For
-            End If
-        Next i
-
-        ' 許可されていない取引先は非表示にする
-        sw_1.Rows(nrow_1).Hidden = Not isBrandAllowed
-    Next nrow_1
-
-    ' "納品確認リスト"のシートの各行に対して処理を行うループ
-    For nrow = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
-        ' 各行の最後の列を動的に決定
-        lastCol = sw_2.Cells(nrow, Columns.Count).End(xlToLeft).Column
-
-        ' 第5列から最後の列までの、0より大きい値の合計を計算
-        sw_2.Cells(nrow, 4).Value = Application.WorksheetFunction.SumIf(sw_2.Range(sw_2.Cells(nrow, 5), sw_2.Cells(nrow, lastCol)), ">0")
-    Next nrow
-
-    ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
-    For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
-        ' VLookup関数を使用して、必要なデータを検索し、"I"列に配置
-        sw_1.Range("I" & nrow_1).Value = Application.WorksheetFunction.VLookup(sw_1.Range("B" & nrow_1), sw_2.Range("B:D"), 3, False)
-    Next nrow_1
-
-    ' "食品全体（原紙）" のI列に戻す
     sw_1.Activate
     sw_1.Range("I1").Select
-
-    ' 処理完了のメッセージを表示
-    MsgBox "Hey guys！未納品分を集計できましたよ！"
-
-    ' ワークブックを開いたままにする
-    ' wb2.Close SaveChanges:=True  '
+    MsgBox "Hey!Guys!未納品分を集計できましたよ！"
 End Sub
+
 
 Sub CentrairPlazaDX2()
     Dim nrow As Long, wb1 As Workbook, wb2 As Workbook
@@ -97,8 +87,8 @@ Sub CentrairPlazaDX2()
     Dim orderQuantity As Integer, colIndex As Integer
 
     ' ワークブックを開く
-    Set wb1 = Workbooks.Open("C:\Users\Myopon\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V2.0.xlsm")
-    Set wb2 = Workbooks.Open("C:\Users\Myopon\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
+    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V2.0.xlsm")
+    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
 
     ' ワークシートの参照を設定
     Set sw_1 = wb1.Sheets("食品全体（原紙）")
