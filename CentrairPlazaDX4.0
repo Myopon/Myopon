@@ -1,0 +1,103 @@
+Attribute VB_Name = "模块1"
+' CentrairPlazaDX1
+' 注文曜日に基づいて「食品全体（原紙）」で発注可能な銘柄を表示します。
+
+Sub CentrairPlazaDX1()
+    Dim wsOrderSheet As Worksheet, wsOrderableList As Worksheet
+    Dim nrow As Long, orderDayColumn As Integer
+    Dim orderDay As String, brandCode As String
+    Dim isBrandOrderable As Boolean
+
+    ' シート参照を設定
+    Set wsOrderSheet = ThisWorkbook.Sheets("食品全体（原紙）")
+    Set wsOrderableList = ThisWorkbook.Sheets("発注管理表")
+
+    ' 注文曜日を取得
+    orderDay = wsOrderSheet.Range("T3").Value
+    ' 曜日に対応する列を取得
+    orderDayColumn = WorksheetFunction.Match(orderDay, wsOrderableList.Rows(1), 0)
+    
+    ' 「食品全体（原紙）」の銘柄をループ処理
+    For nrow = 5 To wsOrderSheet.Cells(Rows.Count, "A").End(xlUp).Row
+        brandCode = wsOrderSheet.Cells(nrow, "A").Value
+        ' 発注可能リストで銘柄を検索し、発注可能か判定
+        With wsOrderableList
+            Dim foundCell As Range
+            Set foundCell = .Range("A:A").Find(brandCode, LookIn:=xlValues, LookAt:=xlWhole)
+            If Not foundCell Is Nothing Then
+                ' "〇" または "◎" の場合に発注可能と判定
+                isBrandOrderable = .Cells(foundCell.Row, orderDayColumn).Value = "〇" Or _
+                                   .Cells(foundCell.Row, orderDayColumn).Value = "◎"
+            End If
+        End With
+        ' 行の表示/非表示を設定
+        wsOrderSheet.Rows(nrow).Hidden = Not isBrandOrderable
+    Next nrow
+    
+    ' 確認メッセージボックスを表示
+    MsgBox "Hey,Guys！本日発注可能な銘柄を更新しました。", vbInformation
+End Sub
+
+Function SumIfColor(rng As Range, color As Long) As Double
+    Dim cell As Range
+    Dim sum As Double
+    
+    sum = 0
+    For Each cell In rng
+        If cell.Interior.color = color Then
+            If IsNumeric(cell.Value) Then
+                sum = sum + cell.Value
+            End If
+        End If
+    Next cell
+
+    SumIfColor = sum
+End Function
+
+
+Sub CentrairPlazaDX2()
+    Dim nrow As Long, lastCol As Long, nrow_1 As Long
+    Dim wb1 As Workbook, wb2 As Workbook
+    Dim sw_1 As Worksheet, sw_2 As Worksheet
+    Dim orderDay As Integer
+    Dim allowedBrands() As Variant
+    Dim brandName As String
+    Dim isBrandAllowed As Boolean
+    Dim i As Integer
+
+    ' ワークブックを開く
+    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V3.0.xlsm")
+    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
+
+    ' ワークシートの参照を設定
+    Set sw_1 = wb1.Sheets("食品全体（原紙）")
+    Set sw_2 = wb2.Sheets("納品確認リスト")
+
+
+    ' 目標色（白色）
+    Dim targetColor As Long
+    targetColor = RGB(255, 255, 255) ' 白色
+
+    ' "納品確認リスト"のシートの各行に対して処理を行うループ
+    For nrow = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
+        lastCol = sw_2.Cells(nrow, Columns.Count).End(xlToLeft).Column
+        sw_2.Cells(nrow, 4).Value = SumIfColor(sw_2.Range(sw_2.Cells(nrow, 5), sw_2.Cells(nrow, lastCol)), targetColor)
+    Next nrow
+
+
+    ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
+    For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
+        Dim lookupValue As Variant
+        lookupValue = sw_1.Range("B" & nrow_1).Value
+        If Not IsError(Application.Match(lookupValue, sw_2.Range("B:B"), 0)) Then
+            sw_1.Range("I" & nrow_1).Value = Application.WorksheetFunction.VLookup(lookupValue, sw_2.Range("B:D"), 3, False)
+        Else
+            sw_1.Range("I" & nrow_1).Value = "" ' 該当するデータがない場合は空白を設定
+        End If
+    Next nrow_1
+
+    sw_1.Activate
+    sw_1.Range("I1").Select
+    MsgBox "未納品分を集計できましたよ！"
+End Sub
+
