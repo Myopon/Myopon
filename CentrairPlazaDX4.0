@@ -1,16 +1,16 @@
-Attribute VB_Name = "模块1"
 ' CentrairPlazaDX1
 ' 注文曜日に基づいて「食品全体（原紙）」で発注可能な銘柄を表示します。
 
 Sub CentrairPlazaDX1()
-    Dim wsOrderSheet As Worksheet, wsOrderableList As Worksheet
+    Dim wsOrderSheet As Worksheet, wsOrderableList As Worksheet, wsSpecialProducts As Worksheet
     Dim nrow As Long, orderDayColumn As Integer
-    Dim orderDay As String, brandCode As String
+    Dim orderDay As String, brandCode As String, productCode As String
     Dim isBrandOrderable As Boolean
 
     ' シート参照を設定
     Set wsOrderSheet = ThisWorkbook.Sheets("食品全体（原紙）")
     Set wsOrderableList = ThisWorkbook.Sheets("発注管理表")
+    Set wsSpecialProducts = ThisWorkbook.Sheets("特殊商品")
 
     ' 注文曜日を取得
     orderDay = wsOrderSheet.Range("T3").Value
@@ -20,16 +20,31 @@ Sub CentrairPlazaDX1()
     ' 「食品全体（原紙）」の銘柄をループ処理
     For nrow = 5 To wsOrderSheet.Cells(Rows.Count, "A").End(xlUp).Row
         brandCode = wsOrderSheet.Cells(nrow, "A").Value
-        ' 発注可能リストで銘柄を検索し、発注可能か判定
-        With wsOrderableList
+        productCode = wsOrderSheet.Cells(nrow, "B").Value
+        isBrandOrderable = False ' 初期値を設定
+
+        ' 特殊商品リストで商品コードを検索
+        With wsSpecialProducts
             Dim foundCell As Range
-            Set foundCell = .Range("A:A").Find(brandCode, LookIn:=xlValues, LookAt:=xlWhole)
+            Set foundCell = .Range("B:B").Find(productCode, LookIn:=xlValues, LookAt:=xlWhole)
             If Not foundCell Is Nothing Then
-                ' "〇" または "◎" の場合に発注可能と判定
-                isBrandOrderable = .Cells(foundCell.Row, orderDayColumn).Value = "〇" Or _
-                                   .Cells(foundCell.Row, orderDayColumn).Value = "◎"
+                isBrandOrderable = .Cells(foundCell.Row, orderDayColumn + 2).Value = "〇" Or _
+                                   .Cells(foundCell.Row, orderDayColumn + 2).Value = "◎"
             End If
         End With
+
+        ' 特殊商品リストにない場合、発注管理表で銘柄を検索
+        If Not isBrandOrderable Then
+            With wsOrderableList
+                Dim foundBrandCell As Range
+                Set foundBrandCell = .Range("A:A").Find(brandCode, LookIn:=xlValues, LookAt:=xlWhole)
+                If Not foundBrandCell Is Nothing Then
+                    isBrandOrderable = .Cells(foundBrandCell.Row, orderDayColumn).Value = "〇" Or _
+                                       .Cells(foundBrandCell.Row, orderDayColumn).Value = "◎"
+                End If
+            End With
+        End If
+
         ' 行の表示/非表示を設定
         wsOrderSheet.Rows(nrow).Hidden = Not isBrandOrderable
     Next nrow
@@ -37,6 +52,7 @@ Sub CentrairPlazaDX1()
     ' 確認メッセージボックスを表示
     MsgBox "Hey,Guys！本日発注可能な銘柄を更新しました。", vbInformation
 End Sub
+
 
 Function SumIfColor(rng As Range, color As Long) As Double
     Dim cell As Range
@@ -100,4 +116,101 @@ Sub CentrairPlazaDX2()
     sw_1.Range("I1").Select
     MsgBox "未納品分を集計できましたよ！"
 End Sub
+Sub CentrairPlazaDX3()
+    Dim nrow As Long, wb1 As Workbook, wb2 As Workbook
+    Dim sw_1 As Worksheet, sw_2 As Worksheet, sw_generalLeadTime As Worksheet, sw_specialLeadTime As Worksheet, sw_ROYLeadTime As Worksheet
+    Dim brandName As String, productCode As String
+    Dim orderDate As Date, deliveryDate As Date
+    Dim orderQuantity As Integer, colIndex As Integer
+    Dim foundRow As Range
+    Dim weekdayColumn As Integer, deliveryDays As Variant
 
+    ' 设置工作簿和工作表的引用
+    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】セントレアプラザ発注書V3.0.xlsm")
+    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX2.0\【NEW】納品確認リスト.xlsm")
+    Set sw_1 = wb1.Sheets("食品全体（原紙）")
+    Set sw_2 = wb2.Sheets("納品確認リスト")
+    Set sw_generalLeadTime = wb2.Sheets("一般リードタイム")
+    Set sw_specialLeadTime = wb2.Sheets("特殊リードタイム")
+    Set sw_ROYLeadTime = wb2.Sheets("ROYリードタイム")
+    orderDate = sw_1.Range("T2").Value
+
+    ' 计算星期几对应的列号
+    weekdayColumn = WorksheetFunction.Weekday(orderDate, 2) + 4
+
+    ' 遍历食品全体（原紙）的每一行
+    For nrow = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
+        brandName = sw_1.Range("A" & nrow).Value
+        productCode = sw_1.Range("B" & nrow).Value
+        orderQuantity = sw_1.Range("S" & nrow).Value
+
+        ' 如果行被隐藏，则设置订单量为0
+        If sw_1.Rows(nrow).Hidden Then orderQuantity = 0
+
+        ' 默认设置为不发货
+        deliveryDays = "×"
+
+        ' 检查特殊リードタイム
+        Set foundRow = sw_specialLeadTime.Columns(1).Find(What:=productCode, LookIn:=xlFormulas, LookAt:=xlWhole)
+        If Not foundRow Is Nothing Then
+            deliveryDays = foundRow.Offset(0, weekdayColumn).Value
+        End If
+
+        ' 检查ROYリードタイム和一般リードタイム
+        If deliveryDays = "×" Then
+            If brandName = "ROY" Then
+                ' 检查ROYリードタイム
+                Set foundRow = sw_ROYLeadTime.Columns(1).Find(What:=orderDate, LookIn:=xlFormulas, LookAt:=xlWhole)
+                If Not foundRow Is Nothing Then
+                    deliveryDays = foundRow.Offset(0, 2).Value
+                End If
+            Else
+                ' 检查一般リードタイム
+                Set foundRow = sw_generalLeadTime.Columns(1).Find(What:=brandName, LookIn:=xlFormulas, LookAt:=xlWhole)
+                If Not foundRow Is Nothing Then
+                    deliveryDays = foundRow.Offset(0, weekdayColumn).Value
+                End If
+            End If
+        End If
+
+        ' 如果deliveryDays为"×"，则不处理
+        If deliveryDays <> "×" Then
+            ' 计算预计送货日期
+            deliveryDate = orderDate + deliveryDays
+
+            ' 在納品確認リスト中查找并更新商品数量
+            Dim matchRow As Long
+            matchRow = 0
+            For i = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
+                If sw_2.Cells(i, "B").Value = productCode Then
+                    matchRow = i
+                    Exit For
+                End If
+            Next i
+
+            ' 查找对应的送货日期列
+            colIndex = 0
+            For i = 2 To sw_2.Cells(1, Columns.Count).End(xlToLeft).Column
+                If sw_2.Cells(1, i).Value = deliveryDate Then
+                    colIndex = i
+                    Exit For
+                End If
+            Next i
+
+            ' 更新商品数量
+            If matchRow > 0 And colIndex > 0 Then
+                sw_2.Cells(matchRow, colIndex).Value = IIf(orderQuantity = 0, "", orderQuantity)
+            End If
+        End If
+    Next nrow
+
+    ' 显示消息框确认完成
+    MsgBox "納品リストに反映できました。", vbInformation
+
+    ' 返回到“納品確認リスト”工作表的A列
+    sw_2.Activate
+    sw_2.Range("A3").Select
+
+    ' 保持工作簿打开
+    ' wb2.Close SaveChanges:=True
+End Sub
