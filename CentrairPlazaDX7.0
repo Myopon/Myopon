@@ -1,3 +1,6 @@
+' CentrairPlazaDX7.0
+' 注文曜日に基づいて「食品全体（原紙）」で発注可能な銘柄を表示します。
+
 Sub CentrairPlazaDX1()
     Dim wsOrderSheet As Worksheet, wsGeneralLeadTime As Worksheet, wsSpecialLeadTime As Worksheet, wsROYLeadTime As Worksheet
     Dim nrow As Long, generalOrderDayColumn As Integer, specialOrderDayColumn As Integer, royOrderDayColumn As Integer
