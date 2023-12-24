@@ -1,11 +1,9 @@
-' CentrairPlazaDX6.0
-' 注文曜日に基づいて「食品全体（原紙）」で発注可能な銘柄を表示します。
-
 Sub CentrairPlazaDX1()
     Dim wsOrderSheet As Worksheet, wsGeneralLeadTime As Worksheet, wsSpecialLeadTime As Worksheet, wsROYLeadTime As Worksheet
     Dim nrow As Long, generalOrderDayColumn As Integer, specialOrderDayColumn As Integer
     Dim orderDate As Date, productCode As String, brandCode As String
     Dim isOrderable As Boolean, isSpecialOrderable As Boolean, isGeneralOrderable As Boolean
+    Dim uniqueBrands As Collection, totalOrderableBrands As Long
 
     ' シート参照を設定
     Set wsOrderSheet = ThisWorkbook.Sheets("食品全体（原紙）")
@@ -17,6 +15,9 @@ Sub CentrairPlazaDX1()
     orderDate = wsOrderSheet.Range("T2").Value
     generalOrderDayColumn = WorksheetFunction.Match(wsOrderSheet.Range("T3").Value, wsGeneralLeadTime.Rows(1), 0)
     specialOrderDayColumn = WorksheetFunction.Match(wsOrderSheet.Range("T3").Value, wsSpecialLeadTime.Rows(1), 0) + 2
+
+    ' 初期値：発注可能取引先
+    Set uniqueBrands = New Collection
 
     ' 「食品全体（原紙）」の商品をループ処理
     For nrow = 5 To wsOrderSheet.Cells(Rows.Count, "A").End(xlUp).Row
@@ -53,10 +54,20 @@ Sub CentrairPlazaDX1()
 
         ' 行の表示/非表示を設定
         wsOrderSheet.Rows(nrow).Hidden = Not isOrderable
+
+        ' 発注可能ブランド
+        If isOrderable Then
+            On Error Resume Next
+            uniqueBrands.Add brandCode, brandCode
+            On Error GoTo 0
+        End If
     Next nrow
 
-    ' 確認メッセージボックスを表示
-    MsgBox "Hi,Buddy!本日発注可能な商品を更新しましたよ。", vbInformation
+    ' 発注可能取引先合計数
+    totalOrderableBrands = uniqueBrands.Count
+
+     ' 確認メッセージボックスを表示（メッセージを2行に分ける）
+    MsgBox "本日発注可能な商品を更新しましたよ。" & vbNewLine & "今日は合計 " & totalOrderableBrands & " 取引先が注文できます。", vbInformation
 End Sub
 
 Function SumIfColor(rng As Range, color As Long) As Double
@@ -213,12 +224,16 @@ Sub CentrairPlazaDX3()
     ' 処理完了のメッセージボックスを表示します
     MsgBox "Congratulations!納品リストに反映できましたよ。", vbInformation
 
+    ' ワークブックは保存しますが、閉じません
+    wb2.Save
+
     ' 納品確認リストのA列に戻ります
     sw_2.Activate
     sw_2.Range("A3").Select
+    Exit Sub
 
-    ' ワークブックは開いたままにします
-    ' wb2.Close SaveChanges:=True
+ErrorHandler:
+    MsgBox "エラーが発生しました: " & Err.Description, vbCritical
+    Exit Sub
 End Sub
-
 
