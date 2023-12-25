@@ -183,7 +183,7 @@ Sub CentrairPlazaDX3()
             
             For i = 1 To lastRow
                 If sw_ROYLeadTime.Cells(i, "B").Value2 = orderDate Then
-                    deliveryDays = sw_ROYLeadTime.Cells(i, "D").Value ' 假设D列是納品日数
+                    deliveryDays = sw_ROYLeadTime.Cells(i, "D").Value ' D列は納品日数とする
                     found = True
                     Exit For
                 End If
