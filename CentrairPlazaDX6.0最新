@@ -58,7 +58,7 @@ Sub CentrairPlazaDX1()
         ' 行の表示/非表示を設定
         wsOrderSheet.Rows(nrow).Hidden = Not isOrderable
         
-        ' Debug 输出
+        ' Debug メッセージ表示
         Debug.Print "Row " & nrow & ": ProductCode " & productCode & ", Brand " & brandCode & _
                     ", isOrderable " & isOrderable & ", isSpecialOrderable " & isSpecialOrderable & _
                     ", isGeneralOrderable " & isGeneralOrderable
@@ -274,7 +274,7 @@ Sub CentrairPlazaDX3()
     Next nrow
 
     ' 処理完了のメッセージボックスを表示
-    MsgBox "Congratulations!納品リストに反映できましたよ。", vbInformation
+    MsgBox "Congratulations!発注数を納品リストに反映しましたよ。", vbInformation
     wb2.Save
     sw_2.Activate
     sw_2.Range("A3").Select
