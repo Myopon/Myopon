@@ -23,7 +23,7 @@ Sub CentrairPlazaDX1()
     Set uniqueBrands = New Collection
 
     ' 「食品全体（原紙）」の商品をループ処理
-    For nrow = 5 To wsOrderSheet.Cells(Rows.Count, "A").End(xlUp).Row
+    For nrow = 5 To wsOrderSheet.Cells(Rows.Count, "A").End(xlUp).row
         productCode = wsOrderSheet.Cells(nrow, "B").Value
         brandCode = wsOrderSheet.Cells(nrow, "A").Value
         isOrderable = True
@@ -31,7 +31,7 @@ Sub CentrairPlazaDX1()
     ' 特殊リードタイムで商品コードを検索
         Set foundSpecialCell = wsSpecialLeadTime.Range("B:B").Find(productCode, LookIn:=xlValues, LookAt:=xlWhole)
         If Not foundSpecialCell Is Nothing Then
-            isSpecialOrderable = wsSpecialLeadTime.Cells(foundSpecialCell.Row, specialOrderDayColumn).Value <> "×"
+            isSpecialOrderable = wsSpecialLeadTime.Cells(foundSpecialCell.row, specialOrderDayColumn).Value <> "×"
         Else
             isSpecialOrderable = True
         End If
@@ -47,7 +47,7 @@ Sub CentrairPlazaDX1()
             If isSpecialOrderable Then
                 Set foundGeneralCell = wsGeneralLeadTime.Range("A:A").Find(brandCode, LookIn:=xlValues, LookAt:=xlWhole)
                 If Not foundGeneralCell Is Nothing Then
-                    isGeneralOrderable = wsGeneralLeadTime.Cells(foundGeneralCell.Row, generalOrderDayColumn).Value <> "×"
+                    isGeneralOrderable = wsGeneralLeadTime.Cells(foundGeneralCell.row, generalOrderDayColumn).Value <> "×"
                 End If
                 isOrderable = isGeneralOrderable
             Else
@@ -57,6 +57,11 @@ Sub CentrairPlazaDX1()
 
         ' 行の表示/非表示を設定
         wsOrderSheet.Rows(nrow).Hidden = Not isOrderable
+        
+        ' Debug 输出
+        Debug.Print "Row " & nrow & ": ProductCode " & productCode & ", Brand " & brandCode & _
+                    ", isOrderable " & isOrderable & ", isSpecialOrderable " & isSpecialOrderable & _
+                    ", isGeneralOrderable " & isGeneralOrderable
 
         ' 発注可能ブランド
         If isOrderable Then
@@ -66,13 +71,29 @@ Sub CentrairPlazaDX1()
         End If
     Next nrow
 
-    ' 発注可能取引先合計数
+    ' 注文可能なブランドの合計数
     totalOrderableBrands = uniqueBrands.Count
 
-     ' 確認メッセージボックスを表示（メッセージを2行に分ける）
-    MsgBox "本日発注可能な商品を更新しましたよ。" & vbNewLine & "今日は合計 " & totalOrderableBrands & " 取引先が注文できます。", vbInformation
+      ' 注文可能なブランドの文字列の初期化
+    Dim orderableBrandsList As String
+    orderableBrandsList = ""
+    
+    ' 注文可能なブランドの文字列を構築
+    Dim brand As Variant
+    For Each brand In uniqueBrands
+        orderableBrandsList = orderableBrandsList & brand & "、"
+    Next brand
+    
+    ' 最後のカンマとスペースを削除
+    If Len(orderableBrandsList) > 0 Then
+        orderableBrandsList = Left(orderableBrandsList, Len(orderableBrandsList) - 1)
+    End If
+    
+    ' 確認メッセージボックスを表示（メッセージを2行に分ける）
+    MsgBox "本日注文可能な商品を更新しました。" & vbNewLine & _
+           "本日は合計 " & totalOrderableBrands & " 取引先が注文可能です。" & vbNewLine & _
+           "注文可能な取引先: " & orderableBrandsList, vbInformation
 End Sub
-
 
 Function SumIfColor(rng As Range, color As Long) As Double
     Dim cell As Range
@@ -115,14 +136,14 @@ Sub CentrairPlazaDX2()
     targetColor = RGB(255, 255, 255) ' 白色
 
     ' "納品確認リスト"のシートの各行に対して処理を行うループ
-    For nrow = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
+    For nrow = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).row
         lastCol = sw_2.Cells(nrow, Columns.Count).End(xlToLeft).Column
         sw_2.Cells(nrow, 4).Value = SumIfColor(sw_2.Range(sw_2.Cells(nrow, 5), sw_2.Cells(nrow, lastCol)), targetColor)
     Next nrow
 
 
     ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
-    For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
+    For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).row
         Dim lookupValue As Variant
         lookupValue = sw_1.Range("B" & nrow_1).Value
         If Not IsError(Application.Match(lookupValue, sw_2.Range("B:B"), 0)) Then
@@ -163,7 +184,7 @@ Sub CentrairPlazaDX3()
     asked = False
 
     ' 食品全体（原紙）の各行をループ処理
-    For nrow = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
+    For nrow = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).row
         brandName = sw_1.Range("A" & nrow).Value
         productCode = sw_1.Range("B" & nrow).Value
         orderQuantity = sw_1.Range("S" & nrow).Value
@@ -181,7 +202,7 @@ Sub CentrairPlazaDX3()
 
         ' ROYリードタイムおよび一般リードタイムを確認
         If deliveryDays = "×" And brandName = "ROY" Then
-            lastRow = sw_ROYLeadTime.Cells(sw_ROYLeadTime.Rows.Count, "B").End(xlUp).Row
+            lastRow = sw_ROYLeadTime.Cells(sw_ROYLeadTime.Rows.Count, "B").End(xlUp).row
             found = False
             
             For i = 1 To lastRow
@@ -215,7 +236,7 @@ Sub CentrairPlazaDX3()
             ' 納品確認リストで商品コードを検索し、数量を更新
             Dim matchRow As Long
             matchRow = 0
-            For i = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
+            For i = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).row
                 If sw_2.Cells(i, "B").Value = productCode Then
                     matchRow = i
                     Exit For
