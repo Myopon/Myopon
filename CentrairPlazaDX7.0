@@ -1,7 +1,6 @@
 ' CentrairPlazaDX7.0 by MIAO
-' 2024-1-4 10:27:54更新
+' 2024年1月5日11:16:25更新
 
-' 注文曜日に基づいて「食品全体（原紙）」で発注可能な銘柄を表示します。
 Sub CentrairPlazaDX1()
     Dim wsOrderSheet As Worksheet, wsGeneralLeadTime As Worksheet, wsSpecialLeadTime As Worksheet, wsROYLeadTime As Worksheet
     Dim nrow As Long, generalOrderDayColumn As Integer, specialOrderDayColumn As Integer
@@ -16,55 +15,44 @@ Sub CentrairPlazaDX1()
     Set wsROYLeadTime = ThisWorkbook.Sheets("ROYリードタイム")
 
     ' 注文日を取得
-    orderDate = wsOrderSheet.Range("T2").Value
-    generalOrderDayColumn = WorksheetFunction.Match(wsOrderSheet.Range("T3").Value, wsGeneralLeadTime.Rows(1), 0)
-    specialOrderDayColumn = WorksheetFunction.Match(wsOrderSheet.Range("T3").Value, wsSpecialLeadTime.Rows(1), 0) + 2
+    orderDate = wsOrderSheet.Range("T2").value
+    generalOrderDayColumn = WorksheetFunction.Match(wsOrderSheet.Range("T3").value, wsGeneralLeadTime.Rows(1), 0)
+    specialOrderDayColumn = WorksheetFunction.Match(wsOrderSheet.Range("T3").value, wsSpecialLeadTime.Rows(1), 0) + 2
 
     ' 初期値：発注可能取引先
     Set uniqueBrands = New Collection
-    PSCOpened = False
-    IYOpened = False
 
     ' 「食品全体（原紙）」の商品をループ処理
     For nrow = 5 To wsOrderSheet.Cells(Rows.Count, "A").End(xlUp).row
-        productCode = wsOrderSheet.Cells(nrow, "B").Value
-        brandCode = wsOrderSheet.Cells(nrow, "A").Value
+        productCode = wsOrderSheet.Cells(nrow, "B").value
+        brandCode = wsOrderSheet.Cells(nrow, "A").value
         isOrderable = True
 
-    ' 特殊リードタイムで商品コードを検索
+        ' 特殊リードタイムで商品コードを検索
         Set foundSpecialCell = wsSpecialLeadTime.Range("B:B").Find(productCode, LookIn:=xlValues, LookAt:=xlWhole)
         If Not foundSpecialCell Is Nothing Then
-            isSpecialOrderable = wsSpecialLeadTime.Cells(foundSpecialCell.row, specialOrderDayColumn).Value <> "×"
+            isSpecialOrderable = wsSpecialLeadTime.Cells(foundSpecialCell.row, specialOrderDayColumn).value <> "×"
         Else
             isSpecialOrderable = True
         End If
 
-    ' ROYリードタイムの確認
+        ' ROYリードタイムの確認
         If brandCode = "ROY" Then
             Set foundROYCell = wsROYLeadTime.Range("B:B").Find(orderDate, LookIn:=xlValues, LookAt:=xlWhole)
             If Not foundROYCell Is Nothing Then
-                isOrderable = (foundROYCell.Offset(0, 2).Value <> "×")
+                isOrderable = (foundROYCell.Offset(0, 2).value <> "×")
             End If
         Else
-    ' 一般リードタイムの確認
+            ' 一般リードタイムの確認
             If isSpecialOrderable Then
                 Set foundGeneralCell = wsGeneralLeadTime.Range("A:A").Find(brandCode, LookIn:=xlValues, LookAt:=xlWhole)
                 If Not foundGeneralCell Is Nothing Then
-                    isGeneralOrderable = wsGeneralLeadTime.Cells(foundGeneralCell.row, generalOrderDayColumn).Value <> "×"
+                    isGeneralOrderable = wsGeneralLeadTime.Cells(foundGeneralCell.row, generalOrderDayColumn).value <> "×"
                 End If
                 isOrderable = isGeneralOrderable
             Else
                 isOrderable = False
             End If
-        End If
-        
-     ' PSCとIYブランドはWEB注文です。注文可能ならWEBサイトを開きます。
-        If brandCode = "PSC" And isOrderable And Not PSCOpened Then
-            Shell "explorer.exe https://www.centrair.jp/index.html", vbNormalFocus
-            PSCOpened = True ' PSCブランドのウェブサイトを開いたフラグを設定
-        ElseIf brandCode = "IY" And isOrderable And Not IYOpened Then
-            Shell "explorer.exe https://duty-free.centrair.jp/", vbNormalFocus
-            IYOpened = True ' IYブランドのウェブサイトを開いたフラグを設定
         End If
 
         ' 行の表示/非表示を設定
@@ -86,7 +74,7 @@ Sub CentrairPlazaDX1()
     ' 注文可能なブランドの合計数
     totalOrderableBrands = uniqueBrands.Count
 
-      ' 注文可能なブランドの文字列の初期化
+    ' 注文可能なブランドの文字列の初期化
     Dim orderableBrandsList As String
     orderableBrandsList = ""
     
@@ -105,7 +93,38 @@ Sub CentrairPlazaDX1()
     MsgBox "本日注文可能な商品を更新しました。" & vbNewLine & _
            "本日は合計 " & totalOrderableBrands & " 取引先が注文可能です。" & vbNewLine & _
            "注文可能な取引先: " & orderableBrandsList, vbInformation
+
+    ' PSCとIYブランドが注文可能な場合、ユーザーにウェブサイトを開くかどうか確認
+    Dim openWeb As VbMsgBoxResult
+    If Not uniqueBrands Is Nothing Then
+        If Contains(uniqueBrands, "PSC") Then
+            openWeb = MsgBox("今日はPSCが注文可能です。WEBサイトを開きますか？", vbYesNo + vbQuestion, "PSC注文可能")
+            If openWeb = vbYes Then
+                Shell "explorer.exe https://www.centrair.jp/index.html", vbNormalFocus
+            End If
+        End If
+        If Contains(uniqueBrands, "IY") Then
+            openWeb = MsgBox("今日はIYが注文可能です。WEBサイトを開きますか？", vbYesNo + vbQuestion, "IY注文可能")
+            If openWeb = vbYes Then
+                Shell "explorer.exe https://duty-free.centrair.jp/", vbNormalFocus
+            End If
+        End If
+    End If
 End Sub
+
+Function Contains(col As Collection, key As String) As Boolean
+    ' コレクションに特定のキーが含まれているかどうかを確認するための関数
+    Dim obj As Variant
+    Contains = False
+    For Each obj In col
+        If LCase(obj) = LCase(key) Then
+            Contains = True
+            Exit Function
+        End If
+    Next obj
+End Function
+
+
 
 Function SumIfColor(rng As Range, color As Long) As Double
     Dim cell As Range
@@ -114,8 +133,8 @@ Function SumIfColor(rng As Range, color As Long) As Double
     sum = 0
     For Each cell In rng
         If cell.Interior.color = color Then
-            If IsNumeric(cell.Value) Then
-                sum = sum + cell.Value
+            If IsNumeric(cell.value) Then
+                sum = sum + cell.value
             End If
         End If
     Next cell
@@ -150,18 +169,18 @@ Sub CentrairPlazaDX2()
     ' "納品確認リスト"のシートの各行に対して処理を行うループ
     For nrow = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).row
         lastCol = sw_2.Cells(nrow, Columns.Count).End(xlToLeft).column
-        sw_2.Cells(nrow, 4).Value = SumIfColor(sw_2.Range(sw_2.Cells(nrow, 5), sw_2.Cells(nrow, lastCol)), targetColor)
+        sw_2.Cells(nrow, 4).value = SumIfColor(sw_2.Range(sw_2.Cells(nrow, 5), sw_2.Cells(nrow, lastCol)), targetColor)
     Next nrow
 
 
     ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
     For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).row
         Dim lookupValue As Variant
-        lookupValue = sw_1.Range("B" & nrow_1).Value
+        lookupValue = sw_1.Range("B" & nrow_1).value
         If Not IsError(Application.Match(lookupValue, sw_2.Range("B:B"), 0)) Then
-            sw_1.Range("I" & nrow_1).Value = Application.WorksheetFunction.VLookup(lookupValue, sw_2.Range("B:D"), 3, False)
+            sw_1.Range("I" & nrow_1).value = Application.WorksheetFunction.VLookup(lookupValue, sw_2.Range("B:D"), 3, False)
         Else
-            sw_1.Range("I" & nrow_1).Value = "" ' 該当するデータがない場合は空白を設定
+            sw_1.Range("I" & nrow_1).value = "" ' 該当するデータがない場合は空白を設定
         End If
     Next nrow_1
 
@@ -189,7 +208,7 @@ Sub CentrairPlazaDX3()
     Set sw_generalLeadTime = wb1.Sheets("一般リードタイム")
     Set sw_specialLeadTime = wb1.Sheets("特殊リードタイム")
     Set sw_ROYLeadTime = wb1.Sheets("ROYリードタイム")
-    orderDate = sw_1.Range("T2").Value
+    orderDate = sw_1.Range("T2").value
 
     weekdayColumn = WorksheetFunction.weekday(orderDate, 2) + 4
     overwriteAll = False
@@ -197,9 +216,9 @@ Sub CentrairPlazaDX3()
 
     ' 食品全体（原紙）の各行をループ処理
     For nrow = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).row
-        brandName = sw_1.Range("A" & nrow).Value
-        productCode = sw_1.Range("B" & nrow).Value
-        orderQuantity = sw_1.Range("S" & nrow).Value
+        brandName = sw_1.Range("A" & nrow).value
+        productCode = sw_1.Range("B" & nrow).value
+        orderQuantity = sw_1.Range("S" & nrow).value
 
         ' 非表示行の場合、発注数量を0に設定
         If sw_1.Rows(nrow).Hidden Then orderQuantity = 0
@@ -209,7 +228,7 @@ Sub CentrairPlazaDX3()
         ' 特殊リードタイムで商品コードを検証
         Set foundRow = sw_specialLeadTime.Columns(1).Find(What:=productCode, LookIn:=xlFormulas, LookAt:=xlWhole)
         If Not foundRow Is Nothing Then
-            deliveryDays = foundRow.Offset(0, weekdayColumn).Value
+            deliveryDays = foundRow.Offset(0, weekdayColumn).value
         End If
 
         ' ROYリードタイムおよび一般リードタイムを確認
@@ -219,7 +238,7 @@ Sub CentrairPlazaDX3()
             
             For i = 1 To lastRow
                 If sw_ROYLeadTime.Cells(i, "B").Value2 = orderDate Then
-                    deliveryDays = sw_ROYLeadTime.Cells(i, "D").Value ' D列は納品日数とする
+                    deliveryDays = sw_ROYLeadTime.Cells(i, "D").value ' D列は納品日数とする
                     found = True
                     Exit For
                 End If
@@ -232,7 +251,7 @@ Sub CentrairPlazaDX3()
         ElseIf deliveryDays = "×" Then
             Set foundRow = sw_generalLeadTime.Columns(1).Find(What:=brandName, LookIn:=xlFormulas, LookAt:=xlWhole)
             If Not foundRow Is Nothing Then
-                deliveryDays = foundRow.Offset(0, weekdayColumn).Value
+                deliveryDays = foundRow.Offset(0, weekdayColumn).value
             End If
         End If
 
@@ -249,7 +268,7 @@ Sub CentrairPlazaDX3()
             Dim matchRow As Long
             matchRow = 0
             For i = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).row
-                If sw_2.Cells(i, "B").Value = productCode Then
+                If sw_2.Cells(i, "B").value = productCode Then
                     matchRow = i
                     Exit For
                 End If
@@ -258,7 +277,7 @@ Sub CentrairPlazaDX3()
             ' 対応する納品日の列を探す
             colIndex = 0
             For i = 2 To sw_2.Cells(1, Columns.Count).End(xlToLeft).column
-                If sw_2.Cells(1, i).Value = deliveryDate Then
+                If sw_2.Cells(1, i).value = deliveryDate Then
                     colIndex = i
                     Exit For
                 End If
@@ -266,7 +285,7 @@ Sub CentrairPlazaDX3()
 
             ' 商品数量を更新
             If matchRow > 0 And colIndex > 0 Then
-                If Not IsEmpty(sw_2.Cells(matchRow, colIndex).Value) And Not asked Then
+                If Not IsEmpty(sw_2.Cells(matchRow, colIndex).value) And Not asked Then
                     Dim response As VbMsgBoxResult
                     Dim cellAddress As String
                     cellAddress = sw_2.Cells(matchRow, colIndex).Address
@@ -278,8 +297,8 @@ Sub CentrairPlazaDX3()
                         Exit For
                     End If
                 End If
-                If overwriteAll Or IsEmpty(sw_2.Cells(matchRow, colIndex).Value) Then
-                    sw_2.Cells(matchRow, colIndex).Value = IIf(orderQuantity = 0, "", orderQuantity)
+                If overwriteAll Or IsEmpty(sw_2.Cells(matchRow, colIndex).value) Then
+                    sw_2.Cells(matchRow, colIndex).value = IIf(orderQuantity = 0, "", orderQuantity)
                 End If
             End If
         End If
@@ -298,4 +317,3 @@ ErrorHandler:
     Exit Sub
 
 End Sub
-
