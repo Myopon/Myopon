@@ -1,5 +1,5 @@
 ' CentrairPlazaDX7.0 by MIAO
-' 2024年1月5日11:16:25更新
+' 2024年1月8日10:24:21更新
 
 Sub CentrairPlazaDX1()
     Dim wsOrderSheet As Worksheet, wsGeneralLeadTime As Worksheet, wsROYLeadTime As Worksheet
@@ -138,8 +138,8 @@ Sub CentrairPlazaDX2()
     Dim i As Integer
 
     ' ワークブックを開く
-    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX6.0\【NEW】セントレアプラザ発注書V6.0.xlsm")
-    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX6.0\【NEW】納品確認リスト.xlsm")
+    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】セントレアプラザ発注書V7.0.xlsm")
+    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】納品確認リスト.xlsm")
 
     ' ワークシートの参照を設定
     Set sw_1 = wb1.Sheets("食品全体（原紙）")
@@ -185,8 +185,8 @@ Sub CentrairPlazaDX3()
     Dim lastRow As Long, found As Boolean
 
     ' ワークブックとシートの参照設定
-    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX6.0\【NEW】セントレアプラザ発注書V6.0.xlsm")
-    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX6.0\【NEW】納品確認リスト.xlsm")
+    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】セントレアプラザ発注書V7.0.xlsm")
+    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】納品確認リスト.xlsm")
     Set sw_1 = wb1.Sheets("食品全体（原紙）")
     Set sw_2 = wb2.Sheets("納品確認リスト")
     Set sw_generalLeadTime = wb1.Sheets("一般リードタイム")
@@ -303,5 +303,3 @@ ErrorHandler:
     Exit Sub
 
 End Sub
-
-
