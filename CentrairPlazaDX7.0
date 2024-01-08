@@ -1,5 +1,5 @@
 ' CentrairPlazaDX7.0 by MIAO
-' 2024年1月8日10:24:21更新
+' 2024年1月8日19:35:32更新
 
 Sub CentrairPlazaDX1()
     Dim wsOrderSheet As Worksheet, wsGeneralLeadTime As Worksheet, wsROYLeadTime As Worksheet
@@ -174,6 +174,7 @@ Sub CentrairPlazaDX2()
 End Sub
 
 Sub CentrairPlazaDX3()
+
     ' エラーハンドリング
     On Error GoTo ErrorHandler
     Dim nrow As Long, i As Long, wb1 As Workbook, wb2 As Workbook
@@ -183,7 +184,8 @@ Sub CentrairPlazaDX3()
     Dim orderQuantity As Integer, colIndex As Integer
     Dim weekdayColumn As Integer, deliveryDays As Variant
     Dim lastRow As Long, found As Boolean
-
+    Dim foundRow As Range
+    
     ' ワークブックとシートの参照設定
     Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】セントレアプラザ発注書V7.0.xlsm")
     Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】納品確認リスト.xlsm")
@@ -192,9 +194,11 @@ Sub CentrairPlazaDX3()
     Set sw_generalLeadTime = wb1.Sheets("一般リードタイム")
     Set sw_ROYLeadTime = wb1.Sheets("ROYリードタイム")
     orderDate = sw_1.Range("T2").Value
-
+    
     weekdayColumn = WorksheetFunction.weekday(orderDate, 2) + 4
+    Dim overwriteAll As Boolean
     overwriteAll = False
+    Dim asked As Boolean
     asked = False
 
     ' 食品全体（原紙）の各行をループ処理
@@ -265,7 +269,7 @@ Sub CentrairPlazaDX3()
                 If Not IsEmpty(sw_2.Cells(matchRow, colIndex).Value) And Not asked Then
                     Dim response As VbMsgBoxResult
                     Dim cellAddress As String
-                    cellAddress = sw_2.Cells(matchRow, colIndex).Address
+                    cellAddress = sw_2.Cells(matchRow, colIndex).Address(False, False) ' 絶対参照記号を除去
                     response = MsgBox("セル " & cellAddress & " には既に値が存在します。すべて上書きしますか？", vbYesNo + vbQuestion, "確認")
                     asked = True
                     If response = vbYes Then
@@ -282,24 +286,23 @@ Sub CentrairPlazaDX3()
     Next nrow
 
     ' 処理完了のメッセージボックスを表示
-MsgBox "Congratulations!発注数を納品リストに反映しましたよ。", vbInformation
+    MsgBox "Congratulations!発注数を納品リストに反映しましたよ。", vbInformation
 
-' 保存前の確認メッセージボックス
-Dim saveResponse As VbMsgBoxResult
-saveResponse = MsgBox("変更を保存しますか？", vbYesNo + vbQuestion, "保存の確認")
+    ' 保存前の確認メッセージボックス
+    Dim saveResponse As VbMsgBoxResult
+    saveResponse = MsgBox("変更を保存しますか？", vbYesNo + vbQuestion, "保存の確認")
 
-' ユーザーが「はい」を選択した場合、保存を実行
-If saveResponse = vbYes Then
-    wb2.Save
-End If
+    ' ユーザーが「はい」を選択した場合、保存を実行
+    If saveResponse = vbYes Then
+        wb2.Save
+    End If
 
-sw_2.Activate
-sw_2.Range("A3").Select
-Exit Sub
+    sw_2.Activate
+    sw_2.Range("A3").Select
+    Exit Sub
 
 ErrorHandler:
     ' エラー発生時のメッセージボックス
     MsgBox "エラーが発生しました: " & Err.Description, vbCritical
     Exit Sub
-
 End Sub
