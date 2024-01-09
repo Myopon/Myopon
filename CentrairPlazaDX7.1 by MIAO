@@ -18,7 +18,7 @@ Sub CentrairPlazaDX1()
     orderDate = wsOrderSheet.Range("T2").Value
     generalOrderDayColumn = WorksheetFunction.Match(wsOrderSheet.Range("T3").Value, wsGeneralLeadTime.Rows(1), 0)
 
-    ' 初期値：発注可能取引先
+    ' 初期値：発注可能取引先設定デフォルト
     Set uniqueBrands = New Collection
 
     ' 「食品全体（原紙）」の商品をループ処理
@@ -27,14 +27,14 @@ Sub CentrairPlazaDX1()
         brandCode = wsOrderSheet.Cells(nrow, "A").Value
         isOrderable = True
 
-        ' ROYリードタイムの確認
+        ' ROYリードタイム規則の確認
         If brandCode = "ROY" Then
             Set foundROYCell = wsROYLeadTime.Range("B:B").Find(orderDate, LookIn:=xlValues, LookAt:=xlWhole)
             If Not foundROYCell Is Nothing Then
                 isOrderable = (foundROYCell.Offset(0, 2).Value <> "×")
             End If
         Else
-            ' 一般リードタイムの確認
+            ' 一般リードタイム規則の確認
             Set foundGeneralCell = wsGeneralLeadTime.Range("A:A").Find(brandCode, LookIn:=xlValues, LookAt:=xlWhole)
             If Not foundGeneralCell Is Nothing Then
                 isGeneralOrderable = wsGeneralLeadTime.Cells(foundGeneralCell.row, generalOrderDayColumn).Value <> "×"
@@ -147,7 +147,7 @@ Sub CentrairPlazaDX2()
     Set sw_2 = wb2.Sheets("納品確認リスト")
 
 
-    ' 目標色（白色）
+    ' 目標色設定
     Dim targetColor As Long
     targetColor = RGB(255, 255, 255) ' 白色
 
