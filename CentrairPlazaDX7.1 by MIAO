@@ -1,5 +1,6 @@
 ' CentrairPlazaDX7.1 by MIAO
-' 2024年1月9日17:53:38更新
+' 2024年1月9日17:53:38更新 
+'保存シートを選択できるようになった
 
 Sub CentrairPlazaDX1()
     Dim wsOrderSheet As Worksheet, wsGeneralLeadTime As Worksheet, wsROYLeadTime As Worksheet
