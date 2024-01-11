@@ -86,13 +86,13 @@ Sub CentrairPlazaDX1()
         If Contains(uniqueBrands, "PSC") Then
             openWeb = MsgBox("今日はPSCが注文可能です。WEBサイトを開きますか？", vbYesNo + vbQuestion, "PSC注文可能")
             If openWeb = vbYes Then
-                Shell "explorer.exe https://www.centrair.jp/index.html", vbNormalFocus
+                Shell "explorer.exe https://www.chainflow2.jp/pasco1/seller/Z0001/Z0001E01.aspx", vbNormalFocus
             End If
         End If
         If Contains(uniqueBrands, "IY") Then
             openWeb = MsgBox("今日はIYが注文可能です。WEBサイトを開きますか？", vbYesNo + vbQuestion, "IY注文可能")
             If openWeb = vbYes Then
-                Shell "explorer.exe https://duty-free.centrair.jp/", vbNormalFocus
+                Shell "explorer.exe https://odr.ordering.ishiya.co.jp/jlogin", vbNormalFocus
             End If
         End If
     End If
