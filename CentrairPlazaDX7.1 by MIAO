@@ -138,14 +138,17 @@ Sub CentrairPlazaDX2()
     Dim isBrandAllowed As Boolean
     Dim i As Integer
 
-    ' ワークブックを開く
-    Set wb1 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】セントレアプラザ発注書V7.0.xlsm")
-    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】納品確認リスト.xlsm")
+    ' 現在のワークブックのパスを取得
+    Dim currentPath As String
+    currentPath = ThisWorkbook.Path
 
-    ' ワークシートの参照を設定
-    Set sw_1 = wb1.Sheets("食品全体（原紙）")
-    Set sw_2 = wb2.Sheets("納品確認リスト")
+    ' 目標のワークブックの完全なパスを構築
+    Dim targetWorkbookPath As String
+    targetWorkbookPath = currentPath & "\【NEW】セントレアプラザ発注書V7.0.xlsm"
 
+    ' 目標のワークブックを開く
+    Set wb1 = Workbooks.Open(targetWorkbookPath)
+    Set wb2 = Workbooks.Open(currentPath & "\【NEW】納品確認リスト.xlsm")
 
     ' 目標色設定
     Dim targetColor As Long
