@@ -1,0 +1,311 @@
+' CentrairPlazaDX7.4 by MIAO
+' 2024年1月11日14:42:46更新  DX2 thisbook
+
+Sub CentrairPlazaDX1()
+    Dim wsOrderSheet As Worksheet, wsGeneralLeadTime As Worksheet, wsROYLeadTime As Worksheet
+    Dim nrow As Long, generalOrderDayColumn As Integer
+    Dim orderDate As Date, productCode As String, brandCode As String
+    Dim isOrderable As Boolean, isGeneralOrderable As Boolean
+    Dim uniqueBrands As Collection, totalOrderableBrands As Long
+
+    ' シート参照を設定
+    Set wsOrderSheet = ThisWorkbook.Sheets("食品全体（原紙）")
+    Set wsGeneralLeadTime = ThisWorkbook.Sheets("一般リードタイム")
+    Set wsROYLeadTime = ThisWorkbook.Sheets("ROYリードタイム")
+
+    ' 注文日を取得
+    orderDate = wsOrderSheet.Range("T2").Value
+    generalOrderDayColumn = WorksheetFunction.Match(wsOrderSheet.Range("T3").Value, wsGeneralLeadTime.Rows(1), 0)
+
+    ' 初期値：発注可能取引先
+    Set uniqueBrands = New Collection
+
+    ' 「食品全体（原紙）」の商品をループ処理
+    For nrow = 5 To wsOrderSheet.Cells(Rows.Count, "A").End(xlUp).row
+        productCode = wsOrderSheet.Cells(nrow, "B").Value
+        brandCode = wsOrderSheet.Cells(nrow, "A").Value
+        isOrderable = True
+
+        ' ROYリードタイムの確認
+        If brandCode = "ROY" Then
+            Set foundROYCell = wsROYLeadTime.Range("B:B").Find(orderDate, LookIn:=xlValues, LookAt:=xlWhole)
+            If Not foundROYCell Is Nothing Then
+                isOrderable = (foundROYCell.Offset(0, 2).Value <> "×")
+            End If
+        Else
+            ' 一般リードタイムの確認
+            Set foundGeneralCell = wsGeneralLeadTime.Range("A:A").Find(brandCode, LookIn:=xlValues, LookAt:=xlWhole)
+            If Not foundGeneralCell Is Nothing Then
+                isGeneralOrderable = wsGeneralLeadTime.Cells(foundGeneralCell.row, generalOrderDayColumn).Value <> "×"
+            End If
+            isOrderable = isGeneralOrderable
+        End If
+
+        ' 行の表示/非表示を設定
+        wsOrderSheet.Rows(nrow).Hidden = Not isOrderable
+        
+        ' Debug メッセージ表示
+        Debug.Print "Row " & nrow & ": ProductCode " & productCode & ", Brand " & brandCode & _
+                    ", isOrderable " & isOrderable & ", isGeneralOrderable " & isGeneralOrderable
+
+        ' 発注可能ブランド
+        If isOrderable Then
+            On Error Resume Next
+            uniqueBrands.Add brandCode, brandCode
+            On Error GoTo 0
+        End If
+    Next nrow
+
+    ' 注文可能なブランドの合計数
+    totalOrderableBrands = uniqueBrands.Count
+
+    ' 注文可能なブランドの文字列の初期化
+    Dim orderableBrandsList As String
+    orderableBrandsList = ""
+    
+    ' 注文可能なブランドの文字列を構築
+    Dim brand As Variant
+    For Each brand In uniqueBrands
+        orderableBrandsList = orderableBrandsList & brand & "、"
+    Next brand
+    
+    ' 最後のカンマとスペースを削除
+    If Len(orderableBrandsList) > 0 Then
+        orderableBrandsList = Left(orderableBrandsList, Len(orderableBrandsList) - 1)
+    End If
+    
+    ' 確認メッセージボックスを表示（メッセージを2行に分ける）
+    MsgBox "本日注文可能な商品を更新しました。" & vbNewLine & _
+           "本日は合計 " & totalOrderableBrands & " 取引先が注文可能です。" & vbNewLine & _
+           "注文可能な取引先: " & orderableBrandsList, vbInformation
+
+    ' PSCとIYブランドが注文可能な場合、ユーザーにウェブサイトを開くかどうか確認
+    Dim openWeb As VbMsgBoxResult
+    If Not uniqueBrands Is Nothing Then
+        If Contains(uniqueBrands, "PSC") Then
+            openWeb = MsgBox("今日はPSCが注文可能です。WEBサイトを開きますか？", vbYesNo + vbQuestion, "PSC注文可能")
+            If openWeb = vbYes Then
+                Shell "explorer.exe https://www.centrair.jp/index.html", vbNormalFocus
+            End If
+        End If
+        If Contains(uniqueBrands, "IY") Then
+            openWeb = MsgBox("今日はIYが注文可能です。WEBサイトを開きますか？", vbYesNo + vbQuestion, "IY注文可能")
+            If openWeb = vbYes Then
+                Shell "explorer.exe https://duty-free.centrair.jp/", vbNormalFocus
+            End If
+        End If
+    End If
+End Sub
+
+Function Contains(col As Collection, key As String) As Boolean
+    ' コレクションに特定のキーが含まれているかどうかを確認するための関数
+    Dim obj As Variant
+    Contains = False
+    For Each obj In col
+        If LCase(obj) = LCase(key) Then
+            Contains = True
+            Exit Function
+        End If
+    Next obj
+End Function
+
+
+Function SumIfColor(rng As Range, color As Long) As Double
+    Dim cell As Range
+    Dim sum As Double
+
+    sum = 0
+    For Each cell In rng
+        If cell.Interior.color = color Then
+            If IsNumeric(cell.Value) Then
+                sum = sum + cell.Value
+            End If
+        End If
+    Next cell
+
+    SumIfColor = sum
+End Function
+
+
+Sub CentrairPlazaDX2()
+    Dim nrow As Long, lastCol As Long, nrow_1 As Long
+    Dim wb1 As Workbook, wb2 As Workbook
+    Dim sw_1 As Worksheet, sw_2 As Worksheet
+    Dim orderDay As Integer
+    Dim allowedBrands() As Variant
+    Dim brandName As String
+    Dim isBrandAllowed As Boolean
+    Dim i As Integer
+
+    ' ワークブックを開く
+    Set wb1 = ThisWorkbook
+    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】納品確認リスト.xlsm")
+
+    ' ワークシートの参照を設定
+    Set sw_1 = wb1.Sheets("食品全体（原紙）")
+    Set sw_2 = wb2.Sheets("納品確認リスト")
+
+
+    ' 目標色（白色）
+    Dim targetColor As Long
+    targetColor = RGB(255, 255, 255) ' 白色
+
+    ' "納品確認リスト"のシートの各行に対して処理を行うループ
+    For nrow = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).row
+        lastCol = sw_2.Cells(nrow, Columns.Count).End(xlToLeft).column
+        sw_2.Cells(nrow, 4).Value = SumIfColor(sw_2.Range(sw_2.Cells(nrow, 5), sw_2.Cells(nrow, lastCol)), targetColor)
+    Next nrow
+
+
+    ' "食品全体（原紙）"のシートの各行に対して処理を行うループ
+    For nrow_1 = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).row
+        Dim lookupValue As Variant
+        lookupValue = sw_1.Range("B" & nrow_1).Value
+        If Not IsError(Application.Match(lookupValue, sw_2.Range("B:B"), 0)) Then
+            sw_1.Range("I" & nrow_1).Value = Application.WorksheetFunction.VLookup(lookupValue, sw_2.Range("B:D"), 3, False)
+        Else
+            sw_1.Range("I" & nrow_1).Value = "" ' 該当するデータがない場合は空白を設定
+        End If
+    Next nrow_1
+
+    sw_1.Activate
+    sw_1.Range("I1").Select
+    MsgBox "Ohye!無事に未納品分を集計できましたよ！"
+End Sub
+
+Sub CentrairPlazaDX3()
+    ' エラーハンドリング
+    On Error GoTo ErrorHandler
+    Dim nrow As Long, i As Long, wb1 As Workbook, wb2 As Workbook
+    Dim sw_1 As Worksheet, sw_2 As Worksheet, sw_generalLeadTime As Worksheet, sw_ROYLeadTime As Worksheet
+    Dim brandName As String, productCode As String
+    Dim orderDate As Date, deliveryDate As Date
+    Dim orderQuantity As Integer, colIndex As Integer
+    Dim weekdayColumn As Integer, deliveryDays As Variant
+    Dim lastRow As Long, found As Boolean
+    Dim foundRow As Range
+
+    ' ファイルを開くダイアログを表示し、ユーザーが選択したファイルのパスを取得
+    Dim filePath As Variant
+    filePath = Application.GetOpenFilename("Excel ファイル (*.xlsm), *.xlsm")
+
+    ' ユーザーがファイルを選択しなかった場合、処理を中断
+    If filePath = False Then
+        MsgBox "処理がキャンセルされました。", vbInformation
+        Exit Sub
+    End If
+
+    ' ワークブックとシートの参照設定
+    Set wb1 = Workbooks.Open(filePath)
+    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】納品確認リスト.xlsm")
+    Set sw_1 = wb1.Sheets("食品全体（原紙）")
+    Set sw_2 = wb2.Sheets("納品確認リスト")
+    Set sw_generalLeadTime = wb1.Sheets("一般リードタイム")
+    Set sw_ROYLeadTime = wb1.Sheets("ROYリードタイム")
+    orderDate = sw_1.Range("T2").Value
+    
+    weekdayColumn = WorksheetFunction.weekday(orderDate, 2) + 4
+    overwriteAll = False
+    asked = False
+
+    ' 食品全体（原紙）の各行をループ処理
+    For nrow = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).row
+        brandName = sw_1.Range("A" & nrow).Value
+        productCode = sw_1.Range("B" & nrow).Value
+        orderQuantity = sw_1.Range("S" & nrow).Value
+
+        ' 非表示行の場合、発注数量を0に設定
+        If sw_1.Rows(nrow).Hidden Then orderQuantity = 0
+
+        deliveryDays = "×"
+
+        ' ROYリードタイムおよび一般リードタイムを確認
+        If brandName = "ROY" Then
+            lastRow = sw_ROYLeadTime.Cells(sw_ROYLeadTime.Rows.Count, "B").End(xlUp).row
+            found = False
+            
+            For i = 1 To lastRow
+                If sw_ROYLeadTime.Cells(i, "B").Value2 = orderDate Then
+                    deliveryDays = sw_ROYLeadTime.Cells(i, "D").Value ' D列は納品日数とする
+                    found = True
+                    Exit For
+                End If
+            Next i
+
+            If Not found Then
+                deliveryDays = "×"
+                Debug.Print "ROY Date Not Found for: " & Format(orderDate, "yyyy/mm/dd")
+            End If
+        Else
+            Set foundRow = sw_generalLeadTime.Columns(1).Find(What:=brandName, LookIn:=xlFormulas, LookAt:=xlWhole)
+            If Not foundRow Is Nothing Then
+                deliveryDays = foundRow.Offset(0, weekdayColumn).Value
+            End If
+        End If
+
+        ' 配送日数が「×」でなければ処理を続行
+        If deliveryDays <> "×" Then
+            ' 配送日数が0の場合は当日到着と見なす
+            If deliveryDays = 0 Then
+                deliveryDate = orderDate
+            Else
+                deliveryDate = orderDate + deliveryDays
+            End If
+
+            ' 納品確認リストで商品コードを検索し、数量を更新
+            Dim matchRow As Long
+            matchRow = 0
+            For i = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).row
+                If sw_2.Cells(i, "B").Value = productCode Then
+                    matchRow = i
+                    Exit For
+                End If
+            Next i
+
+            ' 対応する納品日の列を探す
+            colIndex = 0
+            For i = 2 To sw_2.Cells(1, Columns.Count).End(xlToLeft).column
+                If sw_2.Cells(1, i).Value = deliveryDate Then
+                    colIndex = i
+                    Exit For
+                End If
+            Next i
+
+            ' 商品数量を更新
+            If matchRow > 0 And colIndex > 0 Then
+                If Not IsEmpty(sw_2.Cells(matchRow, colIndex).Value) And Not asked Then
+                    Dim response As VbMsgBoxResult
+                    Dim cellAddress As String
+                    cellAddress = sw_2.Cells(matchRow, colIndex).Address(False, False) ' 絶対参照記号を除去
+                    response = MsgBox("セル " & cellAddress & " には既に値が存在します。すべて上書きしますか？", vbYesNo + vbQuestion, "確認")
+                    asked = True
+                    If response = vbYes Then
+                        overwriteAll = True
+                    Else
+                        MsgBox "上書きを取消しました", vbInformation
+                        Exit For
+                    End If
+                End If
+                If overwriteAll Or IsEmpty(sw_2.Cells(matchRow, colIndex).Value) Then
+                    sw_2.Cells(matchRow, colIndex).Value = IIf(orderQuantity = 0, "", orderQuantity)
+                End If
+            End If
+        End If
+    Next nrow
+    
+    
+    ' 処理完了のメッセージボックスを表示
+    If Not overwriteAll Then
+        MsgBox "Congratulations!発注数を納品リストに反映しましたよ。", vbInformation
+    End If
+
+    sw_2.Activate
+    sw_2.Range("A3").Select
+    Exit Sub
+
+ErrorHandler:
+    ' エラー発生時のメッセージボックス
+    MsgBox "エラーが発生しました: " & Err.Description, vbCritical
+    Exit Sub
+End Sub
+
