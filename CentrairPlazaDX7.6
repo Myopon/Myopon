@@ -199,7 +199,7 @@ Sub CentrairPlazaDX3()
 
     ' ワークブックとシートの参照設定
     Set wb1 = Workbooks.Open(filePath)
-    Set wb2 = Workbooks.Open("C:\Users\Akitaka\Desktop\発注DX7.0\【NEW】納品確認リスト.xlsm")
+    Set wb2 = ThisWorkbook
     Set sw_1 = wb1.Sheets("食品全体（原紙）")
     Set sw_2 = wb2.Sheets("納品確認リスト")
     Set sw_generalLeadTime = wb1.Sheets("一般リードタイム")
