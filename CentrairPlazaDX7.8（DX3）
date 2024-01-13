@@ -1,8 +1,10 @@
+' CentrairPlazaDX7.8 by Myopon
+' 2024年1月13日17:33:32更新 
 Sub CentrairPlazaDX3()
     ' エラーハンドリング
     On Error GoTo ErrorHandler
 
-    ' 定义变量
+    ' 変数の定義
     Dim nrow As Long, i As Long, wb1 As Workbook, wb2 As Workbook
     Dim sw_1 As Worksheet, sw_2 As Worksheet, sw_generalLeadTime As Worksheet, sw_ROYLeadTime As Worksheet
     Dim brandName As String, productCode As String
@@ -12,17 +14,17 @@ Sub CentrairPlazaDX3()
     Dim lastRow As Long, found As Boolean
     Dim foundRow As Range
 
-    ' 获取用户选择的文件路径
+    ' ユーザーが選択したファイルパスの取得
     Dim filePath As Variant
     filePath = Application.GetOpenFilename("Excel ファイル (*.xlsm), *.xlsm")
 
-    ' 检查用户是否选择了文件
+    ' ユーザーがファイルを選択しなかった場合の処理
     If filePath = False Then
         MsgBox "処理がキャンセルされました。", vbInformation
         Exit Sub
     End If
 
-    ' 设置工作簿和工作表
+    ' ワークブックとシートの設定
     Set wb1 = Workbooks.Open(filePath)
     Set wb2 = ThisWorkbook
     Set sw_1 = wb1.Sheets("食品全体（原紙）")
@@ -31,25 +33,25 @@ Sub CentrairPlazaDX3()
     Set sw_ROYLeadTime = wb1.Sheets("ROYリードタイム")
     orderDate = sw_1.Range("T2").Value
 
-    ' 计算星期列
-    weekdayColumn = WorksheetFunction.Weekday(orderDate, 1) + 4  ' 周日在E列，索引为5
+    ' 曜日列の計算
+    weekdayColumn = WorksheetFunction.Weekday(orderDate, 1) + 4  ' 日曜はE列で、インデックスは5
     overwriteAll = False
     asked = False
 
-    ' 处理每一行数据
+    ' 各行のデータ処理
     For nrow = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
-        ' 如果行被隐藏，则跳过此行
+        ' 行が非表示の場合、この行をスキップ
         If sw_1.Rows(nrow).Hidden Then
-            Debug.Print "Skipping hidden row: " & nrow
+            Debug.Print "非表示の行をスキップ: " & nrow
             GoTo NextIteration
         End If
 
-        ' 读取行数据
+        ' 行データの読み取り
         brandName = sw_1.Range("A" & nrow).Value
         productCode = sw_1.Range("B" & nrow).Value
         orderQuantity = sw_1.Range("S" & nrow).Value
 
-        ' 检查品牌并计算交货天数
+        ' ブランドを確認し配達日数を計算
         deliveryDays = "×"
         If brandName = "ROY" Then
             Set foundROYCell = sw_ROYLeadTime.Range("B:B").Find(orderDate, LookIn:=xlValues, LookAt:=xlWhole)
@@ -57,26 +59,28 @@ Sub CentrairPlazaDX3()
                 deliveryDays = foundROYCell.Offset(0, 2).Value
             End If
         Else
-    Set foundGeneralCell = sw_generalLeadTime.Columns(1).Find(brandName, LookIn:=xlValues, LookAt:=xlWhole)
-    If Not foundGeneralCell Is Nothing Then
-        deliveryDays = sw_generalLeadTime.Cells(foundGeneralCell.Row, weekdayColumn).Value
-    Else
-        deliveryDays = "×"
-    End If
-End If
-' 添加即时调试窗口输出
-        Debug.Print "Row " & nrow & ": Brand " & brandName & ", ProductCode " & productCode & _
-                    ", OrderQuantity " & orderQuantity & ", DeliveryDays " & deliveryDays
-        ' 如果交货天数不是 '×'，则继续处理
+            Set foundGeneralCell = sw_generalLeadTime.Columns(1).Find(brandName, LookIn:=xlValues, LookAt:=xlWhole)
+            If Not foundGeneralCell Is Nothing Then
+                deliveryDays = sw_generalLeadTime.Cells(foundGeneralCell.Row, weekdayColumn).Value
+            Else
+                deliveryDays = "×"
+                    End If
+        End If
+
+        ' デバッグ出力
+        Debug.Print "行 " & nrow & ": ブランド " & brandName & ", 商品コード " & productCode & _
+                    ", 注文数量 " & orderQuantity & ", 配達日数 " & deliveryDays
+
+        ' 配達日数が「×」でなければ処理続行
         If deliveryDays <> "×" Then
-            ' 计算交货日期
+            ' 配達日の計算
             If deliveryDays = 0 Then
                 deliveryDate = orderDate
             Else
                 deliveryDate = orderDate + deliveryDays
             End If
 
-            ' 在納品確認リスト中查找匹配的商品代码和更新数量
+            ' 納品確認リストで商品コードを検索し数量を更新
             Dim matchRow As Long
             matchRow = 0
             For i = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
@@ -86,7 +90,7 @@ End If
                 End If
             Next i
 
-            ' 查找对应的交货日期列
+            ' 対応する納品日の列を探す
             colIndex = 0
             For i = 2 To sw_2.Cells(1, Columns.Count).End(xlToLeft).Column
                 If sw_2.Cells(1, i).Value = deliveryDate Then
@@ -95,18 +99,18 @@ End If
                 End If
             Next i
 
-            ' 更新商品数量
+            ' 商品数量を更新
             If matchRow > 0 And colIndex > 0 Then
                 If Not IsEmpty(sw_2.Cells(matchRow, colIndex).Value) And Not asked Then
                     Dim response As VbMsgBoxResult
                     Dim cellAddress As String
                     cellAddress = sw_2.Cells(matchRow, colIndex).Address(False, False)
-                    response = MsgBox("セル " & cellAddress & " には既に値が存在します。すべて上書きしますか？", vbYesNo + vbQuestion, "確認")
+                    response = MsgBox("セル " & cellAddress & " には既に値が存在します。全て上書きしますか？", vbYesNo + vbQuestion, "確認")
                     asked = True
                     If response = vbYes Then
                         overwriteAll = True
                     Else
-                        MsgBox "上書きを取消しました", vbInformation
+                        MsgBox "上書きをキャンセルしました", vbInformation
                         Exit For
                     End If
                 End If
@@ -119,22 +123,19 @@ End If
 NextIteration:
     Next nrow
 
-    ' 完成处理，显示消息框
+    ' 処理完了のメッセージボックスを表示
     If Not overwriteAll Then
-        MsgBox "Congratulations!発注数を納品リストに反映しましたよ。", vbInformation
+        MsgBox "おめでとうございます！発注数を納品リストに反映しました。", vbInformation
     End If
 
-    ' 激活納品確認リスト并选择第一行
+    ' 納品確認リストをアクティブにし、最初の行を選択
     sw_2.Activate
     sw_2.Range("A3").Select
 
     Exit Sub
 
 ErrorHandler:
-    ' 发生错误时显示错误消息
+    ' エラー発生時のメッセージボックス表示
     MsgBox "エラーが発生しました: " & Err.Description, vbCritical
     Exit Sub
 End Sub
-
-
-
