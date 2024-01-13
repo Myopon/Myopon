@@ -28,7 +28,10 @@ Sub CentrairPlazaDX3()
     Set sw_generalLeadTime = wb1.Sheets("一般リードタイム")
     Set sw_ROYLeadTime = wb1.Sheets("ROYリードタイム")
     orderDate = sw_1.Range("T2").Value
+    
     weekdayColumn = WorksheetFunction.Weekday(orderDate, 2) + 4
+    overwriteAll = False
+    asked = False
 
     ' 食品全体（原紙）の各行をループ処理
     For nrow = 5 To sw_1.Range("B" & Rows.Count).End(xlUp).Row
@@ -36,35 +39,41 @@ Sub CentrairPlazaDX3()
         productCode = sw_1.Range("B" & nrow).Value
         orderQuantity = sw_1.Range("S" & nrow).Value
 
-        ' 非表示行の場合、次の行へ
-        If sw_1.Rows(nrow).Hidden Or orderQuantity = 0 Then GoTo NextIteration
+        ' 非表示行の場合、発注数量を0に設定
+        If sw_1.Rows(nrow).Hidden Then orderQuantity = 0
 
         deliveryDays = "×"
 
-        ' ROYリードタイムおよび一般リードタイムを確認
+        ' ROYリードタイムの確認
         If brandName = "ROY" Then
-            lastRow = sw_ROYLeadTime.Cells(sw_ROYLeadTime.Rows.Count, "B").End(xlUp).Row
-            found = False
-            
-            For i = 1 To lastRow
-                If sw_ROYLeadTime.Cells(i, "B").Value2 = orderDate And _
-                   sw_ROYLeadTime.Cells(i, "A").Value = brandName Then
-                    deliveryDays = sw_ROYLeadTime.Cells(i, "D").Value
-                    found = True
-                    Exit For
-                End If
-            Next i
-
-            If Not found Then deliveryDays = "×"
+            Set foundROYCell = sw_ROYLeadTime.Range("B:B").Find(orderDate, LookIn:=xlValues, LookAt:=xlWhole)
+            If Not foundROYCell Is Nothing Then
+                deliveryDays = foundROYCell.Offset(0, 2).Value
+                Debug.Print "Found ROY cell for " & brandName & " on " & orderDate & ": " & deliveryDays
+            Else
+                deliveryDays = "×"
+                Debug.Print "ROY Date Not Found for: " & Format(orderDate, "yyyy/mm/dd")
+            End If
         Else
-            Set foundRow = sw_generalLeadTime.Columns(1).Find(What:=brandName, LookIn:=xlFormulas, LookAt:=xlWhole)
-            If Not foundRow Is Nothing Then
-                deliveryDays = foundRow.Offset(0, weekdayColumn).Value
+            ' 一般リードタイムの確認
+            Set foundGeneralCell = sw_generalLeadTime.Columns(1).Find(brandName, LookIn:=xlValues, LookAt:=xlWhole)
+            If Not foundGeneralCell Is Nothing Then
+                deliveryDays = sw_generalLeadTime.Cells(foundGeneralCell.Row, weekdayColumn).Value
+                Debug.Print "Found General Lead Time for " & brandName & ": " & deliveryDays
+            Else
+                deliveryDays = "×"
+                Debug.Print "General Lead Time Not Found for " & brandName
             End If
         End If
+        ' 计算 deliveryDate 之前
+        Debug.Print "Before calculating deliveryDate, DeliveryDays is: " & deliveryDays
+        ' 添加即时调试窗口输出
+        Debug.Print "Row " & nrow & ": Brand " & brandName & ", ProductCode " & productCode & _
+                    ", OrderQuantity " & orderQuantity & ", DeliveryDays " & deliveryDays
 
         ' 配送日数が「×」でなければ処理を続行
-        If deliveryDays <> "×" And IsNumeric(deliveryDays) Then
+        If deliveryDays <> "×" Then
+            ' 配送日数が0の場合は当日到着と見なす
             If deliveryDays = 0 Then
                 deliveryDate = orderDate
             Else
@@ -75,12 +84,12 @@ Sub CentrairPlazaDX3()
             Dim matchRow As Long
             matchRow = 0
             For i = 3 To sw_2.Range("B" & Rows.Count).End(xlUp).Row
-            If sw_2.Cells(i, "B").Value = productCode Then
-            matchRow = i
-            Exit For
-            End If
+                If sw_2.Cells(i, "B").Value = productCode Then
+                    matchRow = i
+                    Exit For
+                End If
             Next i
-        If matchRow > 0 Then
+
             ' 対応する納品日の列を探す
             colIndex = 0
             For i = 2 To sw_2.Cells(1, Columns.Count).End(xlToLeft).Column
@@ -90,21 +99,40 @@ Sub CentrairPlazaDX3()
                 End If
             Next i
 
-            If colIndex > 0 Then
-                ' 商品数量を更新する。既存の値を上書きしない。
-                If IsEmpty(sw_2.Cells(matchRow, colIndex).Value) Then
-                    sw_2.Cells(matchRow, colIndex).Value = orderQuantity
+            ' 商品数量を更新
+            If matchRow > 0 And colIndex > 0 Then
+                If Not IsEmpty(sw_2.Cells(matchRow, colIndex).Value) And Not asked Then
+                    Dim response As VbMsgBoxResult
+                    Dim cellAddress As String
+                    cellAddress = sw_2.Cells(matchRow, colIndex).Address(False, False) ' 絶対参照記号を除去
+                    response = MsgBox("セル " & cellAddress & " には既に値が存在します。すべて上書きしますか？", vbYesNo + vbQuestion, "確認")
+                    asked = True
+                    If response = vbYes Then
+                        overwriteAll = True
+                    Else
+                        MsgBox "上書きを取消しました", vbInformation
+                        Exit For
+                    End If
+                End If
+                If overwriteAll Or IsEmpty(sw_2.Cells(matchRow, colIndex).Value) Then
+                    sw_2.Cells(matchRow, colIndex).Value = IIf(orderQuantity = 0, "", orderQuantity)
                 End If
             End If
         End If
+    Next nrow
+    
+    
+    ' 処理完了のメッセージボックスを表示
+    If Not overwriteAll Then
+        MsgBox "Congratulations!発注数を納品リストに反映しましたよ。", vbInformation
     End If
-NextIteration:
-Next nrow
-' 正常終了時のメッセージ
-MsgBox "処理が完了しました。", vbInformation
-Exit Sub
 
-' エラーハンドリング
+    sw_2.Activate
+    sw_2.Range("A3").Select
+    Exit Sub
+
 ErrorHandler:
-MsgBox "エラーが発生しました。" & vbCrLf & "エラーの位置：" & Err.Description, vbCritical
+    ' エラー発生時のメッセージボックス
+    MsgBox "エラーが発生しました: " & Err.Description, vbCritical
+    Exit Sub
 End Sub
