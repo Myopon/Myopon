@@ -44,27 +44,22 @@ Sub CentrairPlazaDX3()
 
         deliveryDays = "×"
 
-        ' ROYリードタイムおよび一般リードタイムを確認
+        ' ROYリードタイムの確認
         If brandName = "ROY" Then
-            lastRow = sw_ROYLeadTime.Cells(sw_ROYLeadTime.Rows.Count, "B").End(xlUp).row
-            found = False
-            
-            For i = 1 To lastRow
-                If sw_ROYLeadTime.Cells(i, "B").Value2 = orderDate Then
-                    deliveryDays = sw_ROYLeadTime.Cells(i, "D").Value ' D列は納品日数とする
-                    found = True
-                    Exit For
-                End If
-            Next i
-
-            If Not found Then
+            Set foundROYCell = sw_ROYLeadTime.Range("B:B").Find(orderDate, LookIn:=xlValues, LookAt:=xlWhole)
+            If Not foundROYCell Is Nothing Then
+                deliveryDays = foundROYCell.Offset(0, 2).Value
+            Else
                 deliveryDays = "×"
                 Debug.Print "ROY Date Not Found for: " & Format(orderDate, "yyyy/mm/dd")
             End If
         Else
-            Set foundRow = sw_generalLeadTime.Columns(1).Find(What:=brandName, LookIn:=xlFormulas, LookAt:=xlWhole)
-            If Not foundRow Is Nothing Then
-                deliveryDays = foundRow.Offset(0, weekdayColumn).Value
+            ' 一般リードタイムの確認
+            Set foundGeneralCell = sw_generalLeadTime.Columns(1).Find(brandName, LookIn:=xlValues, LookAt:=xlWhole)
+            If Not foundGeneralCell Is Nothing Then
+                deliveryDays = sw_generalLeadTime.Cells(foundGeneralCell.Row, weekdayColumn).Value
+            Else
+                deliveryDays = "×"
             End If
         End If
 
