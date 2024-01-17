@@ -1,4 +1,4 @@
-Sub CalculateAndUpdate()
+Sub CentrairPlazaDX4()
     Dim wsSource As Worksheet, wsDestination As Worksheet
     Dim cell As Range
     Dim dict As Object
@@ -52,3 +52,4 @@ Sub CalculateAndUpdate()
 
     MsgBox "ブランドの総仕入れ額の更新が完了しました。", vbInformation, "更新完了"
 End Sub
+
