@@ -185,5 +185,6 @@ Sub CentrairPlazaDX2()
 
     sw_1.Activate
     sw_1.Range("I1").Select
-    MsgBox "未納品分の集計が完了しました！ファイル保存後(値)に発注数調整を行ってください。"
+    MsgBox "未納品分の集計が完了しました！
+　　　　　　　名前付けで保存し値を貼付後に発注数調整を行ってください。"
 End Sub
