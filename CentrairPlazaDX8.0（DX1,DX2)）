@@ -1,5 +1,5 @@
 ' CentrairPlazaDX8.0 by Myopon
-' 2024年2月8日10:53:57
+' 2024年2月8日11:11:51
 
 Sub CentrairPlazaDX1()
      ' シートおよび変数の定義
@@ -97,6 +97,17 @@ Sub CentrairPlazaDX1()
         End If
     End If
 End Sub
+Function Contains(col As Collection, key As String) As Boolean
+    ' コレクションに特定のキーが含まれているかどうかを確認するための関数
+    Dim obj As Variant
+    Contains = False
+    For Each obj In col
+        If LCase(obj) = LCase(key) Then
+            Contains = True
+            Exit Function
+        End If
+    Next obj
+End Function
 
 Sub CentrairPlazaDX2()
     Dim nrow As Long, lastCol As Long, nrow_1 As Long
@@ -189,6 +200,11 @@ Sub CentrairPlazaDX2()
     Else
         MsgBox "未納品分の集計が完了しました！" & vbCrLf & "名前付けで保存し値を貼付後に発注数調整を行ってください。" & vbCrLf & "500万を超えるブランドはありません。", vbInformation, "更新完了"
     End If
+    
+    ' メッセージボックス表示後に"食品全体（原紙）"のI1に戻る
+    sw_1.Activate
+    sw_1.Range("I1").Select
+    
 End Sub
 
 Function SumIfColor(rng As Range, color As Long) As Double
