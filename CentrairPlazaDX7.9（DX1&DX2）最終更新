@@ -192,16 +192,19 @@ Sub CentrairPlazaDX2()
     End If
 
 If brandsOver5M <> "" Then
-    msgText = "未納品分の集計が完了しました！" & vbCrLf & vbCrLf & _
-              "名前付けで保存してから発注数調整を行ってください。値を貼付保存も忘れないでね" & vbCrLf & vbCrLf & _
+    msgText = "未納品分の集計が完了しました！" & vbCrLf & _
+              "名前を付けて保存した後、発注数を調整してください。" & vbCrLf & _
+              "データを値で貼り付けて保存することも忘れないでね。" & vbCrLf & _
               "500万を超えるブランド: " & brandsOver5M
     MsgBox msgText, vbInformation + vbOKOnly, "更新完了"
-    Else
-    msgText = "未納品分の集計が完了しました！" & vbCrLf & vbCrLf & _
-              "名前付けで保存してから発注数調整を行ってください。値を貼付保存も忘れないでね。" & vbCrLf & vbCrLf & _
+Else
+    msgText = "未納品分の集計が完了しました！" & vbCrLf & _
+              "名前を付けて保存した後、発注数を調整してください。" & vbCrLf & _
+              "データを値で貼り付けて保存することも忘れないでね。" & vbCrLf & _
               "500万を超えるブランドはありません。"
     MsgBox msgText, vbInformation + vbOKOnly, "更新完了"
 End If
+
 
     ' メッセージボックス表示後に"食品全体（原紙）"のI1に戻る
     sw_1.Activate
