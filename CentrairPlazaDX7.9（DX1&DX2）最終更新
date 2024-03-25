@@ -193,12 +193,12 @@ Sub CentrairPlazaDX2()
 
 If brandsOver5M <> "" Then
     msgText = "未納品分の集計が完了しました！" & vbCrLf & vbCrLf & _
-              "名前付けで保存し値を貼付後に発注数調整を行ってください。" & vbCrLf & vbCrLf & _
+              "名前付けで保存してから発注数調整を行ってください。値を貼付保存も忘れないでね" & vbCrLf & vbCrLf & _
               "500万を超えるブランド: " & brandsOver5M
     MsgBox msgText, vbInformation + vbOKOnly, "更新完了"
     Else
     msgText = "未納品分の集計が完了しました！" & vbCrLf & vbCrLf & _
-              "名前付けで保存し値を貼付後に発注数調整を行ってください。" & vbCrLf & vbCrLf & _
+              "名前付けで保存してから発注数調整を行ってください。値を貼付保存も忘れないでね。" & vbCrLf & vbCrLf & _
               "500万を超えるブランドはありません。"
     MsgBox msgText, vbInformation + vbOKOnly, "更新完了"
 End If
